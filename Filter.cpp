@@ -391,7 +391,7 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 			regions[noRegions++] = createRegion(noRegions - 1, normalMeasure[i], pointCloudData[i]);
 			region_matrix[i] = noRegions - 1;
 			// vecinul din spate
-			regions[noRegions - 1].neighbours.push_back(regiune_vecin);
+			// regions[noRegions - 1].neighbours.push_back(regiune_vecin);
 		}
 	}
 
@@ -408,7 +408,7 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 			// create new region
 			regions[noRegions++] = createRegion(noRegions - 1, normalMeasure[i*width], pointCloudData[i*width]);
 			region_matrix[i*width] = noRegions - 1;
-			regions[noRegions - 1].neighbours.push_back(regiune_vecin);
+			// regions[noRegions - 1].neighbours.push_back(regiune_vecin);
 		}
 	}
 	
@@ -465,10 +465,14 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 				regions[noRegions++] = createRegion(noRegions - 1, normalMeasure[offset], pointCloudData[offset]);
 				region_matrix[offset] = noRegions - 1;
 				// adauga vecin stanga sus stanga sus sus sus dreapta
+				/*
+				
 				regions[noRegions - 1].neighbours.push_back(region_left);
 				regions[noRegions - 1].neighbours.push_back(region_up);
 				regions[noRegions - 1].neighbours.push_back(region_up_left);
 				regions[noRegions - 1].neighbours.push_back(region_up_right);
+				
+				*/
 			}
 
 		}
