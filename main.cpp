@@ -136,9 +136,17 @@ int main(int argc, char **argv) {
             //Filter::filterGrayscaleSobel(grayscaleData, grayscaleProcessedData, (int)resolution.width, (int)resolution.height);
             //Filter::filterDepthPrewitt(depthData, depthProcessedData, (int)resolution.width, (int)resolution.height);
             //Filter::computeNormals(pointCloudData, normalMeasureComputedData, (int)resolution.width, (int)resolution.height);
-            //Filter::computeNormals5x5Vicinity(pointCloudData, normalMeasureComputedData, (int)resolution.width, (int)resolution.height);
+            Filter::computeNormals5x5Vicinity(pointCloudData, normalMeasureComputedData, (int)resolution.width, (int)resolution.height);
             //Filter::transformNormalsToImage(normalMeasureComputedData, normalImageComputedData, (int)resolution.width, (int)resolution.height);
-            Filter::planarSegmentation(pointCloudData, normalMeasureData, normalImageComputedData, (int)resolution.width, (int)resolution.height);
+            
+
+            // TODO : normal matrix is empty ????????/
+            for (int i = 0; i < 100; ++i) {
+                printf("x:%f y:%f z:%f\n", normalMeasureComputedData[i][0], normalMeasureComputedData[i][1], normalMeasureComputedData[i][2]);
+            }
+            
+            
+            Filter::planarSegmentation(pointCloudData, normalMeasureComputedData, normalImageComputedData, (int)resolution.width, (int)resolution.height);
             int svo_position = zed.getSVOPosition();
 
             // Display the frame

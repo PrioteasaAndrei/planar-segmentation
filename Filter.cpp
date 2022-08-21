@@ -335,10 +335,11 @@ void Filter::regions_statistics(std::map<int, Region> regions) {
 	printf("Biggest region has %d\n", max_region.pxNo);
 }
 
-// TODO : adjacency list for second algorithm
 
 void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeasure,cv::Vec4b* segmentedData, int width, int height) {
 	
+	printf("%f\n", normalMeasure[0][0]);
+
 	float treshold = 1;
 	int* region_matrix = new int[width * height];
 
@@ -391,7 +392,7 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 			regions[noRegions++] = createRegion(noRegions - 1, normalMeasure[i], pointCloudData[i]);
 			region_matrix[i] = noRegions - 1;
 			// vecinul din spate
-			// regions[noRegions - 1].neighbours.push_back(regiune_vecin);
+			regions[noRegions - 1].neighbours.push_back(&regiune_vecin);
 		}
 	}
 
@@ -408,7 +409,7 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 			// create new region
 			regions[noRegions++] = createRegion(noRegions - 1, normalMeasure[i*width], pointCloudData[i*width]);
 			region_matrix[i*width] = noRegions - 1;
-			// regions[noRegions - 1].neighbours.push_back(regiune_vecin);
+			regions[noRegions - 1].neighbours.push_back(&regiune_vecin);
 		}
 	}
 	
@@ -465,21 +466,23 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 				regions[noRegions++] = createRegion(noRegions - 1, normalMeasure[offset], pointCloudData[offset]);
 				region_matrix[offset] = noRegions - 1;
 				// adauga vecin stanga sus stanga sus sus sus dreapta
-				/*
 				
-				regions[noRegions - 1].neighbours.push_back(region_left);
-				regions[noRegions - 1].neighbours.push_back(region_up);
-				regions[noRegions - 1].neighbours.push_back(region_up_left);
-				regions[noRegions - 1].neighbours.push_back(region_up_right);
 				
-				*/
+				regions[noRegions - 1].neighbours.push_back(&region_left);
+				regions[noRegions - 1].neighbours.push_back(&region_up);
+				regions[noRegions - 1].neighbours.push_back(&region_up_left);
+				regions[noRegions - 1].neighbours.push_back(&region_up_right);
+				
+				
 			}
 
 		}
 
 	}
 
-	// mergeRegions(width, height, regions, region_matrix);
+	// Try to find out why left wall and floor are the same color
+
+	mergeRegions(width, height, regions, region_matrix);
 
 	
 	for (int y = 1; y < height - 1; y++)
@@ -489,7 +492,7 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 		for (int x = 1; x < width - 1; x++)
 		{
 			offset = y * width + x;
-			uchar r = (region_matrix[offset] * 50) % 255;
+			uchar r = (region_matrix[offset] * 5) % 255;
 			uchar g = (region_matrix[offset] * 4) % 255;
 			uchar b = (region_matrix[offset] * 9) % 255;
 			segmentedData[offset] = cv::Vec4b(r, g, b, 1);
@@ -498,8 +501,8 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 		}
 	}
 
-	printf("No regions in image: %d --- No pixels in image: %d ---- Percent of regions: %f %% \n\n\n", noRegions,width*height,noRegions * 1.0 / (width*height) * 100);
-	regions_statistics(regions);
+	// printf("No regions in image: %d --- No pixels in image: %d ---- Percent of regions: %f %% \n\n\n", noRegions,width*height,noRegions * 1.0 / (width*height) * 100);
+	// regions_statistics(regions);
 	
 }
 
@@ -562,7 +565,7 @@ void Filter::mergeRegionsAux(Region* a, Region* b, std::map<int,Region> regions,
 // dar macar la final ar trebui sa am un region matrix bun
 void Filter::mergeRegions(int width, int height, std::map<int, Region> regions, int* region_matrix) {
 	
-	float treshold = 1;
+	float treshold = 100;
 
 	auto evaluate_cost = [](Region a, Region b) {
 		float pondere1 = 0.5;
@@ -580,10 +583,10 @@ void Filter::mergeRegions(int width, int height, std::map<int, Region> regions, 
 		
 		int len = x.second.neighbours.size();
 		for (int i = 0; i < len; ++i) {
-			float cost = evaluate_cost(x.second, x.second.neighbours[i]);
+			float cost = evaluate_cost(x.second, *(x.second.neighbours[i]));
 			if (abs(cost - treshold) < 0.001) {
 				Region current_region = regions[x.first];
-				Region neigh_region = regions[x.second.neighbours[i].id];
+				Region neigh_region = regions[x.second.neighbours[i]->id];
 				mergeRegionsAux(&current_region,&neigh_region,regions, region_matrix, width, height);
 			}
 		}

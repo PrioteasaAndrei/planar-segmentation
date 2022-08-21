@@ -7,7 +7,7 @@ struct Region {
 	cv::Vec4f medianPoint;
 	int pxNo;
 
-	std::vector<Region> neighbours;
+	std::vector<Region*> neighbours;
 };
 
 
