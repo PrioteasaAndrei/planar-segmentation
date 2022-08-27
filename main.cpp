@@ -136,17 +136,17 @@ int main(int argc, char **argv) {
             //Filter::filterGrayscaleSobel(grayscaleData, grayscaleProcessedData, (int)resolution.width, (int)resolution.height);
             //Filter::filterDepthPrewitt(depthData, depthProcessedData, (int)resolution.width, (int)resolution.height);
             //Filter::computeNormals(pointCloudData, normalMeasureComputedData, (int)resolution.width, (int)resolution.height);
-            Filter::computeNormals5x5Vicinity(pointCloudData, normalMeasureComputedData, (int)resolution.width, (int)resolution.height);
+            //Filter::computeNormals5x5Vicinity(pointCloudData, normalMeasureData, (int)resolution.width, (int)resolution.height);
             //Filter::transformNormalsToImage(normalMeasureComputedData, normalImageComputedData, (int)resolution.width, (int)resolution.height);
             
 
-            // TODO : normal matrix is empty ????????/
-            for (int i = 0; i < 100; ++i) {
-                printf("x:%f y:%f z:%f\n", normalMeasureComputedData[i][0], normalMeasureComputedData[i][1], normalMeasureComputedData[i][2]);
+           /*
+            for (int i = 1000; i < 1500; ++i) {
+                printf("x:%f y:%f z:%f\n", normalMeasureData[i][0], normalMeasureData[i][1], normalMeasureData[i][2]);
             }
-            
-            
-            Filter::planarSegmentation(pointCloudData, normalMeasureComputedData, normalImageComputedData, (int)resolution.width, (int)resolution.height);
+            */
+ 
+            Filter::planarSegmentation(pointCloudData, normalMeasureData, normalImageComputedData, (int)resolution.width, (int)resolution.height);
             int svo_position = zed.getSVOPosition();
 
             // Display the frame
@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
             //cv::imshow("GrayscaleProcessed", grayscaleImageProcessed_ocv);
             //cv::imshow("Normals", normalImage_ocv);
             //cv::imshow("NormalsComputed", normalImageComputed_ocv);
-            //cv::imshow("NormalMeasure", normalMeasure_ocv);
+            cv::imshow("NormalMeasure", normalMeasure_ocv);
             cv::imshow("Planar segmentation map", normalImageComputed_ocv);
             key = cv::waitKey(10);
            

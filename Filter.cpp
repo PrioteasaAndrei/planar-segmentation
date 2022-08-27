@@ -298,9 +298,9 @@ void Filter::add_pixel_to_region(cv::Vec4f* normalMeasure, cv::Vec4f* pointCloud
 	regiune_vecin->medianPoint[2] += _3dpoint_curent[2];
 
 
-	regiune_vecin->medianPoint[0] += normala_curenta[0];
-	regiune_vecin->medianPoint[1] += normala_curenta[1];
-	regiune_vecin->medianPoint[2] += normala_curenta[2];
+	regiune_vecin->medianNormal[0] += normala_curenta[0];
+	regiune_vecin->medianNormal[1] += normala_curenta[1];
+	regiune_vecin->medianNormal[2] += normala_curenta[2];
 
 	regiune_vecin->pxNo++;
 
@@ -340,7 +340,8 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 	
 	printf("%f\n", normalMeasure[0][0]);
 
-	float treshold = 1;
+	// 0.9
+	float treshold = 0.9;
 	int* region_matrix = new int[width * height];
 
 	// safe 
@@ -357,10 +358,13 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 
 	// safe 
 	auto evaluate_cost = [normalMeasure,pointCloudData](int offset_vecin, int offset_curent, Region regiune_vecin) {
-		float pondere1 = 0.8;
-		float pondere2 = 0.2;
+		// 1.3
+		float pondere1 = 1.3;
+		// 0.3
+		float pondere2 = 0.3;
 		
-		float cost = pondere1 * (1 - my_dot(normalMeasure[offset_curent], regiune_vecin.medianNormal)) + pondere2 * distance3D(pointCloudData[offset_vecin], pointCloudData[offset_curent]);
+		float cost = pondere1 * (1 - my_dot(normalMeasure[offset_curent], regiune_vecin.medianNormal)) + pondere2 * distance3D(regiune_vecin.medianPoint, pointCloudData[offset_curent]);
+		//printf("Cost: %f\n", cost);
 		return cost;
 	};
 
@@ -375,17 +379,21 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 
 	
 	for (int i = 1; i < width; ++i) {
+
+		if (isnan(normalMeasure[i][0]) || isnan(normalMeasure[i][1]) || isnan(normalMeasure[i][2]) || isnan(normalMeasure[i][3])) {
+			add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, 0, i, &regions[0]);
+			continue;
+		}
+
 		Region regiune_vecin = regions[region_matrix[i - 1]];
 		auto cost = evaluate_cost(i - 1, i, regiune_vecin);
 		// printf("Costul este: %f\n", cost);
 		
 		if (cost < treshold) {
 			// add pixel to region
-			// printf("expanding existing region %d\n",regiune_vecin.id);
-			//printf("\t\tNo pixels before: %d\n",regiune_vecin.pxNo);
+
 ;			add_pixel_to_region(normalMeasure,pointCloudData,region_matrix,i - 1, i, &regiune_vecin);
-			//printf("\t\tNo pixels after: %d\n", regiune_vecin.pxNo);
-			// region_matrix[i] = region_matrix[i-1];
+
 		}
 		else {
 			// create new region
@@ -397,11 +405,16 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 	}
 
 	for (int i = 1; i < height; ++i) {
+		if (isnan(normalMeasure[i][0]) || isnan(normalMeasure[i][1]) || isnan(normalMeasure[i][2]) || isnan(normalMeasure[i][3])) {
+			add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, 0, i, &regions[0]);
+			continue;
+		}
+
 		Region regiune_vecin = regions[region_matrix[(i - 1) * width]];
 		auto cost = evaluate_cost((i - 1)*width, i*width, regiune_vecin);
 		if (cost < treshold) {
 			// add pixel to region
-			// printf("expanding existing region %d\n", regiune_vecin.id);
+
 			add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, (i - 1)*width, i*width, &regiune_vecin);
 	
 		}
@@ -417,13 +430,22 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 	{
 		for (int x = 1; x < width-1; x++)
 		{
+
 			offset = y * width + x;
+
+			if (isnan(normalMeasure[offset][0]) || isnan(normalMeasure[offset][1]) || isnan(normalMeasure[offset][2]) || isnan(normalMeasure[offset][3]) ){
+				add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, 0, offset, &regions[0]);
+				continue;
+			}
+
 			// normalProcessedData[offset] = cv::Vec4b(G, G, G, 0);
 			int left = offset - 1;
 			int up = offset - width;
 			int up_left = offset - width - 1;
 			int up_right = offset - width + 1;
 
+			// map < id_regiune , regiune >
+			// key : region_matrix[left]
 			auto cost_left = evaluate_cost(left, offset, regions[region_matrix[left]]);
 			auto cost_up = evaluate_cost(up, offset, regions[region_matrix[up]]);
 			auto cost_up_left = evaluate_cost(up_left, offset, regions[region_matrix[up_left]]);
@@ -459,6 +481,7 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 			if (min_cost < treshold) {
 				// adaug la regiunea corespunzatoare
 				// printf("expanding existing region %d\n", regions[region_matrix[corresponding_offset]].id);
+				// region matrix de ce?
 				add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, corresponding_offset, offset, &regions[region_matrix[corresponding_offset]]);
 	
 			}
@@ -467,7 +490,8 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 				region_matrix[offset] = noRegions - 1;
 				// adauga vecin stanga sus stanga sus sus sus dreapta
 				
-				
+				// vecinii trebuie sa fie reciproci
+				// trebuie set 
 				regions[noRegions - 1].neighbours.push_back(&region_left);
 				regions[noRegions - 1].neighbours.push_back(&region_up);
 				regions[noRegions - 1].neighbours.push_back(&region_up_left);
@@ -482,7 +506,7 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 
 	// Try to find out why left wall and floor are the same color
 
-	mergeRegions(width, height, regions, region_matrix);
+	//mergeRegions(width, height, regions, region_matrix);
 
 	
 	for (int y = 1; y < height - 1; y++)
@@ -518,6 +542,7 @@ cv::Vec4f dif(cv::Vec4f a, cv::Vec4f b) {
 }
 
 // not safe
+// point in plan, normal la plan -> ecuatia planului
 cv::Vec4f planeEquationFromPointAndNormal(cv::Vec4f point, cv::Vec4f normal) {
 	cv::Vec4f tbr;
 	tbr[0] = normal[0];
@@ -559,7 +584,10 @@ void Filter::mergeRegionsAux(Region* a, Region* b, std::map<int,Region> regions,
 
 }
 
-
+// deque 
+// fiecare pixel are un pointer la un int
+// cand schimb culorea schimb doar ce e la valoarea pointerului ala
+// nu trebuie sa fac flood fill
 
 // posibil sa nu modifice regiunile din cauza pointerilor
 // dar macar la final ar trebui sa am un region matrix bun
@@ -567,6 +595,9 @@ void Filter::mergeRegions(int width, int height, std::map<int, Region> regions, 
 	
 	float treshold = 100;
 
+	// 1.3
+	// 0.4
+	// 0.655
 	auto evaluate_cost = [](Region a, Region b) {
 		float pondere1 = 0.5;
 		float pondere2 = 0.5;
