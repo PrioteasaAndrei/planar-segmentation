@@ -4,9 +4,9 @@
 #include <iostream>
 
 
-Filter::Filter(){}
+Filter::Filter() {}
 
-Filter::~Filter(){}
+Filter::~Filter() {}
 
 
 void Filter::colorToGrayscale(cv::Mat colorImage) {
@@ -17,7 +17,7 @@ void Filter::colorToGrayscale(cv::Mat colorImage) {
 		for (int x = 0; x < width; x++)
 		{
 			cv::Vec4b color = colorImage.at<cv::Vec4b>(y, x);
-			uchar gray = (uchar)((float)color[0]*0.114 + (float)color[1]*0.587 + (float)color[2]*0.299);
+			uchar gray = (uchar)((float)color[0] * 0.114 + (float)color[1] * 0.587 + (float)color[2] * 0.299);
 			colorImage.at<cv::Vec4b>(y, x) = cv::Vec4b(gray, gray, gray, color[3]);
 		}
 	}
@@ -38,7 +38,7 @@ void Filter::colorToGrayscale(cv::Vec4b* colorData, int width, int height) {
 	}
 }
 
-void Filter::filterColorAverage(cv::Vec4b* colorData, cv::Vec4b* colorProcessedData, int width, int height){
+void Filter::filterColorAverage(cv::Vec4b* colorData, cv::Vec4b* colorProcessedData, int width, int height) {
 	int offset, offset_neighbor;
 	for (int y = 3; y < height - 3; y++)
 	{
@@ -58,7 +58,7 @@ void Filter::filterColorAverage(cv::Vec4b* colorData, cv::Vec4b* colorProcessedD
 			color /= 49;
 			offset = y * width + x;
 			colorProcessedData[offset] = cv::Vec4b(color[0], color[1], color[2], color[3]);
-			
+
 		}
 	}
 
@@ -81,7 +81,7 @@ void Filter::filterGrayscaleGaussian(uchar* grayscaleData, uchar* grayscaleProce
 				{
 					offset_neighbor = (y + k) * width + (x + l);
 					uchar grayscale_neighbor = grayscaleData[offset_neighbor];
-					grayscale += (float)grayscale_neighbor * mask[(k+1)*3 + (l+1)];
+					grayscale += (float)grayscale_neighbor * mask[(k + 1) * 3 + (l + 1)];
 				}
 			}
 
@@ -92,7 +92,7 @@ void Filter::filterGrayscaleGaussian(uchar* grayscaleData, uchar* grayscaleProce
 	}
 }
 
-void Filter::filterDepthByDistance(cv::Vec4b* depthData, cv::Vec4b* depthProcessedData, float* depthMeasureData,int width, int height){
+void Filter::filterDepthByDistance(cv::Vec4b* depthData, cv::Vec4b* depthProcessedData, float* depthMeasureData, int width, int height) {
 	int offset = 0;
 	for (int y = 0; y < height; y++)
 	{
@@ -100,14 +100,14 @@ void Filter::filterDepthByDistance(cv::Vec4b* depthData, cv::Vec4b* depthProcess
 		{
 			float depthInfo = depthMeasureData[offset];
 			if (depthInfo < 2)
-				depthProcessedData[offset] = cv::Vec4b(255,255,255,0);
+				depthProcessedData[offset] = cv::Vec4b(255, 255, 255, 0);
 			else
 				if (depthInfo < 3)
 					depthProcessedData[offset] = cv::Vec4b(200, 200, 200, 1);
 				else if (depthInfo < 4)
 					depthProcessedData[offset] = cv::Vec4b(127, 127, 127, 1);
 				else if (depthInfo < 5)
-					depthProcessedData[offset] = cv::Vec4b(70,70, 70, 1);
+					depthProcessedData[offset] = cv::Vec4b(70, 70, 70, 1);
 				else
 					depthProcessedData[offset] = cv::Vec4b(0, 0, 0, 1);
 			offset++;
@@ -128,7 +128,7 @@ void Filter::filterGrayscaleSobel(uchar* grayscaleData, uchar* grayscaleProcesse
 	{
 		for (int x = 1; x < width - 1; x++)
 		{
-			float Gx = 0; 
+			float Gx = 0;
 			float Gy = 0;
 			for (int k = -1; k <= 1; k++)
 			{
@@ -184,23 +184,23 @@ void Filter::filterDepthPrewitt(cv::Vec4b* depthData, cv::Vec4b* depthProcessedD
 void Filter::filterNormalByDot(cv::Vec4f* normalMeasure, cv::Vec4b* normalProcessedData, int width, int height) {
 	//TODO
 	int offset, offset_neighbor_s, offset_neighbor_d, offset_neighbor_ss, offset_neighbor_ds, offset_neighbor_sj, offset_neighbor_dj;
-	
+
 	for (int y = 1; y < height - 1; y++)
 	{
 		for (int x = 1; x < width - 1; x++)
 		{
 			float Gx = 0;
 			float Gy = 0;
-			
+
 			offset_neighbor_s = y * width + (x - 1);
 			//.....
 			cv::Vec4f normal_neighbor_s = normalMeasure[offset_neighbor_s];
 			cv::Vec4f normal_neighbor_d, normal_neighbor_ss, normal_neighbor_ds, normal_neighbor_sj, normal_neighbor_dj;
-				
+
 			//Gx =  (1 - dot(normal_neighbor_ss, normal_neighbor_ds)) + 2 * (1 - dot(normal_neighbor_s, normal_neighbor_d))
 			//	+ (1 - dot(normal_neighbor_sj, normal_neighbor_dj));
 			//float G = sqrt(Gx * Gx + Gy * Gy);
-			float G = (abs(Gx) + abs(Gy))*50;
+			float G = (abs(Gx) + abs(Gy)) * 50;
 			offset = y * width + x;
 			normalProcessedData[offset] = cv::Vec4b(G, G, G, 0);
 		}
@@ -243,14 +243,14 @@ void Filter::computeNormals(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeasureC
 /*
 * Functie care ia in considerare pentru media vectorilor
 * doar vectorii care sunt vecini
-* 
+*
 * Vectorii sunt vecini doar daca | depth1 - depth2 | < 0.5
-* 
+*
 * In final, nu am mai folosit-o pentru ca mergea foarte incet
 */
 glm::vec3 correspondingMean(glm::vec3* array, int n) {
 	bool* bitmap = (bool*)malloc(n * sizeof(bool));
-	
+
 	glm::vec3 mean = glm::vec3(0, 0, 0);
 	int counter = 1;
 	for (int i = 0; i < n; ++i) {
@@ -276,9 +276,10 @@ float Filter::my_dot(cv::Vec4f a, cv::Vec4f b) {
 	return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
-void Filter::add_pixel_to_region(cv::Vec4f* normalMeasure, cv::Vec4f* pointCloudData, int* region_matrix, int offset_vecin, int offset_curent, Region *regiune_vecin) {
+void Filter::add_pixel_to_region(cv::Vec4f* normalMeasure, cv::Vec4f* pointCloudData, int* region_matrix, int offset_vecin, int offset_curent, Region* regiune_vecin) {
 	cv::Vec4f _3dpoint_curent = pointCloudData[offset_curent];
 	cv::Vec4f normala_curenta = normalMeasure[offset_curent];
+
 
 	region_matrix[offset_curent] = region_matrix[offset_vecin];
 
@@ -312,20 +313,20 @@ void Filter::add_pixel_to_region(cv::Vec4f* normalMeasure, cv::Vec4f* pointCloud
 	regiune_vecin->medianNormal[1] /= regiune_vecin->pxNo;
 	regiune_vecin->medianNormal[2] /= regiune_vecin->pxNo;
 
+	// toti vecinii se adauga
 
 }
 
 void Filter::regions_statistics(std::map<int, Region> regions) {
 	int max_id = -1;
 	Region max_region;
-	for (auto const &p : regions)
+	for (auto const& p : regions)
 	{
-		// printf("\t\t\t%d\n", p.second.pxNo);
-		// id boop
+
 		if (p.first > max_id) {
 			max_id = p.first;
 		}
-		
+
 		if (p.second.pxNo > max_region.pxNo) {
 			max_region = p.second;
 		}
@@ -334,10 +335,14 @@ void Filter::regions_statistics(std::map<int, Region> regions) {
 	printf("Number of regions: %d\n", max_id);
 	printf("Biggest region has %d\n", max_region.pxNo);
 }
+// TODO: adauga vecini reciproc		----- DONE
+// Update lista vecini cand o noua regiune se creaza
+// TODO: modifica indexul din masca sa fie un pointer nu un
 
+// px A e adaugat la regiunea B deci toti vecinii lui A devin si vecinii lui B
 
-void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeasure,cv::Vec4b* segmentedData, int width, int height) {
-	
+void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeasure, cv::Vec4b* segmentedData, int width, int height) {
+
 	printf("%f\n", normalMeasure[0][0]);
 
 	// 0.9
@@ -354,30 +359,31 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 
 		return reg;
 	};
-	
+
 
 	// safe 
-	auto evaluate_cost = [normalMeasure,pointCloudData](int offset_vecin, int offset_curent, Region regiune_vecin) {
+	auto evaluate_cost = [normalMeasure, pointCloudData](int offset_vecin, int offset_curent, Region regiune_vecin) {
 		// 1.3
 		float pondere1 = 1.3;
 		// 0.3
 		float pondere2 = 0.3;
-		
+
 		float cost = pondere1 * (1 - my_dot(normalMeasure[offset_curent], regiune_vecin.medianNormal)) + pondere2 * distance3D(regiune_vecin.medianPoint, pointCloudData[offset_curent]);
-		//printf("Cost: %f\n", cost);
+
 		return cost;
 	};
 
-	
+
 	int offset, offset_neighbor_s, offset_neighbor_d, offset_neighbor_ss, offset_neighbor_ds, offset_neighbor_sj, offset_neighbor_dj;
 
 	std::map<int, Region> regions;
 	int noRegions = 0;
 
-	regions[noRegions++] = createRegion(noRegions - 1,normalMeasure[0],pointCloudData[0]);
+	regions[noRegions++] = createRegion(noRegions - 1, normalMeasure[0], pointCloudData[0]);
 	region_matrix[0] = 0;
 
-	
+
+	// nu are ce vecin sa adauge ca are doar unul pe ala precedent
 	for (int i = 1; i < width; ++i) {
 
 		if (isnan(normalMeasure[i][0]) || isnan(normalMeasure[i][1]) || isnan(normalMeasure[i][2]) || isnan(normalMeasure[i][3])) {
@@ -386,13 +392,14 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 		}
 
 		Region regiune_vecin = regions[region_matrix[i - 1]];
+
 		auto cost = evaluate_cost(i - 1, i, regiune_vecin);
-		// printf("Costul este: %f\n", cost);
-		
+
+
 		if (cost < treshold) {
 			// add pixel to region
 
-;			add_pixel_to_region(normalMeasure,pointCloudData,region_matrix,i - 1, i, &regiune_vecin);
+			;			add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, i - 1, i, &regiune_vecin);
 
 		}
 		else {
@@ -400,10 +407,14 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 			regions[noRegions++] = createRegion(noRegions - 1, normalMeasure[i], pointCloudData[i]);
 			region_matrix[i] = noRegions - 1;
 			// vecinul din spate
-			regions[noRegions - 1].neighbours.push_back(&regiune_vecin);
+			regions[noRegions - 1].neighbours.insert(&regiune_vecin);
+			regiune_vecin.neighbours.insert(&(regions[noRegions - 1]));
 		}
 	}
 
+
+
+	// are vecin doar pe ala de sus nu are ce adauga
 	for (int i = 1; i < height; ++i) {
 		if (isnan(normalMeasure[i][0]) || isnan(normalMeasure[i][1]) || isnan(normalMeasure[i][2]) || isnan(normalMeasure[i][3])) {
 			add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, 0, i, &regions[0]);
@@ -411,29 +422,32 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 		}
 
 		Region regiune_vecin = regions[region_matrix[(i - 1) * width]];
-		auto cost = evaluate_cost((i - 1)*width, i*width, regiune_vecin);
+		auto cost = evaluate_cost((i - 1) * width, i * width, regiune_vecin);
 		if (cost < treshold) {
 			// add pixel to region
 
-			add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, (i - 1)*width, i*width, &regiune_vecin);
-	
+			add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, (i - 1) * width, i * width, &regiune_vecin);
+
 		}
 		else {
 			// create new region
-			regions[noRegions++] = createRegion(noRegions - 1, normalMeasure[i*width], pointCloudData[i*width]);
-			region_matrix[i*width] = noRegions - 1;
-			regions[noRegions - 1].neighbours.push_back(&regiune_vecin);
+			regions[noRegions++] = createRegion(noRegions - 1, normalMeasure[i * width], pointCloudData[i * width]);
+			region_matrix[i * width] = noRegions - 1;
+			regions[noRegions - 1].neighbours.insert(&regiune_vecin);
+			regiune_vecin.neighbours.insert(&(regions[noRegions - 1]));
 		}
 	}
-	
-	for (int y = 1; y < height-1; y++)
+
+	// trebuie adaugat vecinul de sus?
+	// mama dar trebuie ceva recursiv?
+	for (int y = 1; y < height - 1; y++)
 	{
-		for (int x = 1; x < width-1; x++)
+		for (int x = 1; x < width - 1; x++)
 		{
 
 			offset = y * width + x;
 
-			if (isnan(normalMeasure[offset][0]) || isnan(normalMeasure[offset][1]) || isnan(normalMeasure[offset][2]) || isnan(normalMeasure[offset][3]) ){
+			if (isnan(normalMeasure[offset][0]) || isnan(normalMeasure[offset][1]) || isnan(normalMeasure[offset][2]) || isnan(normalMeasure[offset][3])) {
 				add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, 0, offset, &regions[0]);
 				continue;
 			}
@@ -480,39 +494,42 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 
 			if (min_cost < treshold) {
 				// adaug la regiunea corespunzatoare
-				// printf("expanding existing region %d\n", regions[region_matrix[corresponding_offset]].id);
-				// region matrix de ce?
+
 				add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, corresponding_offset, offset, &regions[region_matrix[corresponding_offset]]);
-	
+
 			}
 			else {
 				regions[noRegions++] = createRegion(noRegions - 1, normalMeasure[offset], pointCloudData[offset]);
 				region_matrix[offset] = noRegions - 1;
 				// adauga vecin stanga sus stanga sus sus sus dreapta
-				
+
 				// vecinii trebuie sa fie reciproci
 				// trebuie set 
-				regions[noRegions - 1].neighbours.push_back(&region_left);
-				regions[noRegions - 1].neighbours.push_back(&region_up);
-				regions[noRegions - 1].neighbours.push_back(&region_up_left);
-				regions[noRegions - 1].neighbours.push_back(&region_up_right);
-				
-				
+				regions[noRegions - 1].neighbours.insert(&region_left);
+				regions[noRegions - 1].neighbours.insert(&region_up);
+				regions[noRegions - 1].neighbours.insert(&region_up_left);
+				regions[noRegions - 1].neighbours.insert(&region_up_right);
+
+				region_left.neighbours.insert(&(regions[noRegions - 1]));
+				region_up.neighbours.insert(&(regions[noRegions - 1]));
+				region_up_left.neighbours.insert(&(regions[noRegions - 1]));
+				region_up_right.neighbours.insert(&(regions[noRegions - 1]));
+
+
 			}
 
 		}
 
 	}
 
-	// Try to find out why left wall and floor are the same color
 
 	//mergeRegions(width, height, regions, region_matrix);
 
-	
+
 	for (int y = 1; y < height - 1; y++)
 	{
 		//printf("\n");
-		
+
 		for (int x = 1; x < width - 1; x++)
 		{
 			offset = y * width + x;
@@ -520,14 +537,12 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 			uchar g = (region_matrix[offset] * 4) % 255;
 			uchar b = (region_matrix[offset] * 9) % 255;
 			segmentedData[offset] = cv::Vec4b(r, g, b, 1);
-			//printf("%d ", region_matrix[offset]);
+
 
 		}
 	}
 
-	// printf("No regions in image: %d --- No pixels in image: %d ---- Percent of regions: %f %% \n\n\n", noRegions,width*height,noRegions * 1.0 / (width*height) * 100);
-	// regions_statistics(regions);
-	
+
 }
 
 
@@ -541,7 +556,7 @@ cv::Vec4f dif(cv::Vec4f a, cv::Vec4f b) {
 	return tbr;
 }
 
-// not safe
+
 // point in plan, normal la plan -> ecuatia planului
 cv::Vec4f planeEquationFromPointAndNormal(cv::Vec4f point, cv::Vec4f normal) {
 	cv::Vec4f tbr;
@@ -563,9 +578,9 @@ float pointToPlaneDistance(cv::Vec4f plane) {
 
 // merge region b into a
 
-void Filter::mergeRegionsAux(Region* a, Region* b, std::map<int,Region> regions, int *region_matrix, int width, int height) {
+void Filter::mergeRegionsAux(Region* a, Region* b, std::map<int, Region> regions, int* region_matrix, int width, int height) {
 	// move everything into a
-		
+
 	a->medianNormal = (a->medianNormal * a->pxNo + b->medianNormal * b->pxNo) / (a->pxNo + b->pxNo);
 	a->medianPoint = (a->medianPoint * a->pxNo + b->medianPoint * b->pxNo) / (a->pxNo + b->pxNo);
 	a->pxNo += b->pxNo;
@@ -589,10 +604,9 @@ void Filter::mergeRegionsAux(Region* a, Region* b, std::map<int,Region> regions,
 // cand schimb culorea schimb doar ce e la valoarea pointerului ala
 // nu trebuie sa fac flood fill
 
-// posibil sa nu modifice regiunile din cauza pointerilor
-// dar macar la final ar trebui sa am un region matrix bun
+
 void Filter::mergeRegions(int width, int height, std::map<int, Region> regions, int* region_matrix) {
-	
+
 	float treshold = 100;
 
 	// 1.3
@@ -605,20 +619,20 @@ void Filter::mergeRegions(int width, int height, std::map<int, Region> regions, 
 
 		// maybe abs diff
 		return pondere1 * (1 - my_dot(a.medianNormal, b.medianNormal))
-			+ pondere2 * (pointToPlaneDistance(planeEquationFromPointAndNormal(a.medianPoint, a.medianNormal)) 
+			+ pondere2 * (pointToPlaneDistance(planeEquationFromPointAndNormal(a.medianPoint, a.medianNormal))
 				- pointToPlaneDistance(planeEquationFromPointAndNormal(b.medianPoint, b.medianNormal)));
 	};
-	
+
 	for (auto const& x : regions) {
 		// get neighbours
-		
+
 		int len = x.second.neighbours.size();
 		for (int i = 0; i < len; ++i) {
 			float cost = evaluate_cost(x.second, *(x.second.neighbours[i]));
 			if (abs(cost - treshold) < 0.001) {
 				Region current_region = regions[x.first];
 				Region neigh_region = regions[x.second.neighbours[i]->id];
-				mergeRegionsAux(&current_region,&neigh_region,regions, region_matrix, width, height);
+				mergeRegionsAux(&current_region, &neigh_region, regions, region_matrix, width, height);
 			}
 		}
 	}
@@ -655,8 +669,8 @@ void Filter::computeNormals5x5Vicinity(cv::Vec4f* pointCloudData, cv::Vec4f* myN
 			p_left_sus_1 = pointCloudData[offset - width - 2];
 			p_right_sus_1 = pointCloudData[offset - width + 2];
 
-			p_left_sus_2 = pointCloudData[offset - 2*width - 2];
-			p_right_sus_2 = pointCloudData[offset - 2*width + 2];
+			p_left_sus_2 = pointCloudData[offset - 2 * width - 2];
+			p_right_sus_2 = pointCloudData[offset - 2 * width + 2];
 
 			p_left_jos_1 = pointCloudData[offset + width - 2];
 			p_right_jos_1 = pointCloudData[offset + width + 2];
@@ -671,7 +685,7 @@ void Filter::computeNormals5x5Vicinity(cv::Vec4f* pointCloudData, cv::Vec4f* myN
 			glm::vec3 vec_horiz_jos_2 = glm::vec3(p_right_jos_2[0] - p_left_jos_2[0], p_right_jos_2[1] - p_left_jos_2[1], p_right_jos_2[2] - p_left_jos_2[2]);
 
 			glm::vec3 mean_vec_horiz = glm::vec3((vec_horiz[0] + vec_horiz_sus_1[0] + vec_horiz_sus_2[0] + vec_horiz_jos_1[0] + vec_horiz_jos_2[0]) / 5, (vec_horiz[1] + vec_horiz_sus_1[1] + vec_horiz_sus_2[1] + vec_horiz_jos_1[1] + vec_horiz_jos_2[1]) / 5, (vec_horiz[2] + vec_horiz_sus_1[2] + vec_horiz_sus_2[2] + vec_horiz_jos_1[2] + vec_horiz_jos_2[2]) / 5);
-			
+
 			/*glm::vec3* arr_horiz = (glm::vec3*)malloc(5 * sizeof(glm::vec3));
 			arr_horiz[0] = vec_horiz;
 			arr_horiz[1] = vec_horiz_sus_1;
@@ -680,11 +694,11 @@ void Filter::computeNormals5x5Vicinity(cv::Vec4f* pointCloudData, cv::Vec4f* myN
 			arr_horiz[3] = vec_horiz_jos_2;
 			*/
 			//glm::vec3 mean_vec_horiz = correspondingMean(
-			p_up = pointCloudData[offset - 2*width];
-			p_down = pointCloudData[offset + 2*width];
+			p_up = pointCloudData[offset - 2 * width];
+			p_down = pointCloudData[offset + 2 * width];
 
-			cv::Vec4f p_up_left_1 = pointCloudData[offset - 2*width - 1];
-			cv::Vec4f p_down_left_1 = pointCloudData[offset + 2*width - 1];
+			cv::Vec4f p_up_left_1 = pointCloudData[offset - 2 * width - 1];
+			cv::Vec4f p_down_left_1 = pointCloudData[offset + 2 * width - 1];
 
 			cv::Vec4f p_up_left_2 = pointCloudData[offset - 2 * width - 2];
 			cv::Vec4f p_down_left_2 = pointCloudData[offset + 2 * width - 2];
@@ -723,8 +737,8 @@ void Filter::transformNormalsToImage(cv::Vec4f* normalMeasureComputedData, cv::V
 			normalImageComputedData[offset] = cv::Vec4b((abs(normalMeasureComputedData[offset][2]) + 1) / 2 * 255,
 				(abs(normalMeasureComputedData[offset][1]) + 1) / 2 * 255,
 				(abs(normalMeasureComputedData[offset][0]) + 1) / 2 * 255, 0);
-			
-			
+
+
 			/*normalImageComputedData[offset] = cv::Vec4b((normalMeasureComputedData[offset][2] + 1.f) / 2.f * 255,
 				(normalMeasureComputedData[offset][1] + 1.f) / 2.f * 255,
 				(normalMeasureComputedData[offset][0] + 1.f) / 2.f * 255, 0);*/

@@ -1,5 +1,6 @@
 #pragma once
 #include <opencv2/opencv.hpp>
+#include <set>
 
 struct Region {
 	int id;
@@ -7,7 +8,13 @@ struct Region {
 	cv::Vec4f medianPoint;
 	int pxNo;
 
-	std::vector<Region*> neighbours;
+	std::set<Region*> neighbours;
+
+	// not safe
+	bool operator<(const Region& t) const
+	{
+		return (this->id < t.id);
+	}
 };
 
 
@@ -24,7 +31,7 @@ public:
 	static void filterDepthGaussian(cv::Vec4b* depthData, cv::Vec4b* depthProcessedData, int width, int height);
 	static void filterGrayscaleGaussian(uchar* grayscaleData, uchar* grayscaleProcessedData, int width, int height);
 	static void filterGrayscaleSobel(uchar* grayscaleData, uchar* grayscaleProcessedData, int width, int height);
-	static void filterGrayscaleMedianFilter(uchar* grayscaleData, uchar* grayscaleProcessedData,int width, int height);
+	static void filterGrayscaleMedianFilter(uchar* grayscaleData, uchar* grayscaleProcessedData, int width, int height);
 	static void filterDepthByDistance(cv::Vec4b* depthData, cv::Vec4b* depthProcessedData, float* depthMeasureData, int width, int height);
 	static void filterDepthPrewitt(cv::Vec4b* depthData, cv::Vec4b* depthProcessedData, int width, int height);
 	static void filterNormalByDot(cv::Vec4f* normalMeasure, cv::Vec4b* normalProcessedData, int width, int height);
