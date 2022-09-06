@@ -7,6 +7,7 @@ struct Region {
 	cv::Vec4f medianNormal;
 	cv::Vec4f medianPoint;
 	int pxNo;
+	int starting_offset_in_image;
 
 	std::set<Region*> neighbours;
 
@@ -42,8 +43,8 @@ public:
 	static void planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeasure, cv::Vec4b* segmentedData, int width, int height);
 	static float my_dot(cv::Vec4f a, cv::Vec4f b);
 	static void regions_statistics(std::map<int, Region> regions);
-	static void add_pixel_to_region(cv::Vec4f* normalMeasure, cv::Vec4f* pointCloudData, int* region_matrix, int offset_vecin, int offset_curent, Region* regiune_vecin);
-	static void mergeRegions(int width, int height, std::map<int, Region> regions, int* region_matrix);
-	static void mergeRegionsAux(Region* a, Region* b, std::map<int, Region> regions, int* region_matrix, int width, int height);
+	static void add_pixel_to_region(cv::Vec4f* normalMeasure, cv::Vec4f* pointCloudData, int** region_matrix, int offset_vecin, int offset_curent, Region* regiune_vecin);
+	static void mergeRegions(int width, int height, std::map<int, Region> regions, int** region_matrix);
+	static void mergeRegionsAux(Region* a, Region* b, std::map<int, Region> regions, int** region_matrix, int width, int height);
 
 };

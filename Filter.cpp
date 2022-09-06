@@ -276,7 +276,7 @@ float Filter::my_dot(cv::Vec4f a, cv::Vec4f b) {
 	return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
-void Filter::add_pixel_to_region(cv::Vec4f* normalMeasure, cv::Vec4f* pointCloudData, int* region_matrix, int offset_vecin, int offset_curent, Region* regiune_vecin) {
+void Filter::add_pixel_to_region(cv::Vec4f* normalMeasure, cv::Vec4f* pointCloudData, int** region_matrix, int offset_vecin, int offset_curent, Region* regiune_vecin) {
 	cv::Vec4f _3dpoint_curent = pointCloudData[offset_curent];
 	cv::Vec4f normala_curenta = normalMeasure[offset_curent];
 
@@ -337,7 +337,7 @@ void Filter::regions_statistics(std::map<int, Region> regions) {
 }
 // TODO: adauga vecini reciproc		----- DONE
 // Update lista vecini cand o noua regiune se creaza
-// TODO: modifica indexul din masca sa fie un pointer nu un
+// TODO: modifica indexul din masca sa fie un pointer nu un ---- DONE 
 
 // px A e adaugat la regiunea B deci toti vecinii lui A devin si vecinii lui B
 
@@ -347,7 +347,7 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 
 	// 0.9
 	float treshold = 0.9;
-	int* region_matrix = new int[width * height];
+	int** region_matrix = new int*[width * height];
 
 	// safe 
 	auto createRegion = [](int id, cv::Vec4f medianNormal, cv::Vec4f medianPoint) {
@@ -379,19 +379,22 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 	std::map<int, Region> regions;
 	int noRegions = 0;
 
+	
 	regions[noRegions++] = createRegion(noRegions - 1, normalMeasure[0], pointCloudData[0]);
-	region_matrix[0] = 0;
-
+	region_matrix[0] = new int(0);
+	regions[noRegions - 1].starting_offset_in_image = 0;
+	//printf("After initializing first pixel as region\n");
 
 	// nu are ce vecin sa adauge ca are doar unul pe ala precedent
 	for (int i = 1; i < width; ++i) {
-
+		//printf("%d Doing first row\n", i);
 		if (isnan(normalMeasure[i][0]) || isnan(normalMeasure[i][1]) || isnan(normalMeasure[i][2]) || isnan(normalMeasure[i][3])) {
 			add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, 0, i, &regions[0]);
+			region_matrix[i] = region_matrix[0];
 			continue;
 		}
 
-		Region regiune_vecin = regions[region_matrix[i - 1]];
+		Region regiune_vecin = regions[*(region_matrix[i - 1])];
 
 		auto cost = evaluate_cost(i - 1, i, regiune_vecin);
 
@@ -399,15 +402,16 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 		if (cost < treshold) {
 			// add pixel to region
 
-			;			add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, i - 1, i, &regiune_vecin);
+			add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, i - 1, i, &regiune_vecin);
 
 		}
 		else {
 			// create new region
 			regions[noRegions++] = createRegion(noRegions - 1, normalMeasure[i], pointCloudData[i]);
-			region_matrix[i] = noRegions - 1;
+			region_matrix[i] = new int(noRegions - 1);
 			// vecinul din spate
 			regions[noRegions - 1].neighbours.insert(&regiune_vecin);
+			regions[noRegions - 1].starting_offset_in_image = i;
 			regiune_vecin.neighbours.insert(&(regions[noRegions - 1]));
 		}
 	}
@@ -416,39 +420,53 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 
 	// are vecin doar pe ala de sus nu are ce adauga
 	for (int i = 1; i < height; ++i) {
+		
 		if (isnan(normalMeasure[i][0]) || isnan(normalMeasure[i][1]) || isnan(normalMeasure[i][2]) || isnan(normalMeasure[i][3])) {
 			add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, 0, i, &regions[0]);
+			region_matrix[i * width] = region_matrix[0];
+			
 			continue;
 		}
-
-		Region regiune_vecin = regions[region_matrix[(i - 1) * width]];
+		// aici crapa | region_matrix[(i-1)*width] nu e initializat
+		
+		Region regiune_vecin = regions[*(region_matrix[(i - 1) * width])];
+		
 		auto cost = evaluate_cost((i - 1) * width, i * width, regiune_vecin);
+		
 		if (cost < treshold) {
 			// add pixel to region
-
+			
 			add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, (i - 1) * width, i * width, &regiune_vecin);
 
 		}
 		else {
+			
 			// create new region
 			regions[noRegions++] = createRegion(noRegions - 1, normalMeasure[i * width], pointCloudData[i * width]);
-			region_matrix[i * width] = noRegions - 1;
+			region_matrix[i * width] = new int(noRegions - 1);
+			regions[noRegions - 1].starting_offset_in_image = i * width;
 			regions[noRegions - 1].neighbours.insert(&regiune_vecin);
 			regiune_vecin.neighbours.insert(&(regions[noRegions - 1]));
 		}
 	}
 
+	
+
+
+	
 	// trebuie adaugat vecinul de sus?
 	// mama dar trebuie ceva recursiv?
 	for (int y = 1; y < height - 1; y++)
 	{
 		for (int x = 1; x < width - 1; x++)
 		{
-
+			//printf("\t\t%d\n", offset);
 			offset = y * width + x;
 
 			if (isnan(normalMeasure[offset][0]) || isnan(normalMeasure[offset][1]) || isnan(normalMeasure[offset][2]) || isnan(normalMeasure[offset][3])) {
 				add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, 0, offset, &regions[0]);
+				//printf("isnan again\n");
+				region_matrix[offset] = region_matrix[0];
 				continue;
 			}
 
@@ -460,47 +478,90 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 
 			// map < id_regiune , regiune >
 			// key : region_matrix[left]
-			auto cost_left = evaluate_cost(left, offset, regions[region_matrix[left]]);
-			auto cost_up = evaluate_cost(up, offset, regions[region_matrix[up]]);
-			auto cost_up_left = evaluate_cost(up_left, offset, regions[region_matrix[up_left]]);
-			auto cost_up_right = evaluate_cost(up_right, offset, regions[region_matrix[up_right]]);
 
-			Region region_left = regions[region_matrix[left]];
-			Region region_up = regions[region_matrix[up]];
-			Region region_up_left = regions[region_matrix[up_left]];
-			Region region_up_right = regions[region_matrix[up_right]];
+			// TODO : pune paranteze aici dupa *
+			//printf("Seg fault 1\n");
+			auto cost_left = evaluate_cost(left, offset, regions[*(region_matrix[left])]);
+			//printf("Seg fault 2\n");
+			auto cost_up = evaluate_cost(up, offset, regions[*(region_matrix[up])]);
+			//printf("Seg fault 3\n");
+			auto cost_up_left = evaluate_cost(up_left, offset, regions[*(region_matrix[up_left])]);
+			//printf("Seg fault 4------%d\n",region_matrix[up_right] == nullptr);
+			//printf("h:%d w:%d -- up_right:%d\n", y, x,up_right);
+			// aici ia seg fault
+			float cost_up_right;
+			if (x == width - 2) {
+				cost_up_right = evaluate_cost(0, offset, regions[0]);
+			}
+			else {
+				cost_up_right = evaluate_cost(up_right, offset, regions[*(region_matrix[up_right])]);
+			}
+			
+
+			//printf("Seg fault 5\n");
+			Region region_left = regions[*(region_matrix[left])];
+			//printf("Seg fault 6\n");
+			Region region_up = regions[*(region_matrix[up])];
+			//printf("Seg fault 7\n");
+			Region region_up_left = regions[*(region_matrix[up_left])];
+			//printf("Seg fault 8\n");
+			Region region_up_right;
+			if (x == width - 2) {
+				region_up_right = regions[0];
+			}
+			else {
+				region_up_right = regions[*(region_matrix[up_right])];
+			}
 
 			auto min_cost = cost_left;
-			auto corresponding_region = regions[region_matrix[left]];
+			//printf("Seg fault 9\n");
+			auto corresponding_region = regions[*(region_matrix[left])];
 			auto corresponding_offset = left;
 
 			if (cost_up < min_cost) {
 				min_cost = cost_up;
-				corresponding_region = regions[region_matrix[up]];
+				corresponding_region = regions[*(region_matrix[up])];
 				corresponding_offset = up;
 			}
 
 			if (cost_up_left < min_cost) {
 				min_cost = cost_up_left;
-				corresponding_region = regions[region_matrix[up_left]];
+				corresponding_region = regions[*(region_matrix[up_left])];
 				corresponding_offset = up_left;
 			}
 
 			if (cost_up_right < min_cost) {
 				min_cost = cost_up_right;
-				corresponding_region = regions[region_matrix[up_right]];
+				corresponding_region = regions[*(region_matrix[up_right])];
 				corresponding_offset = up_right;
 			}
 
+			//printf("Doing each cell\n");
 			if (min_cost < treshold) {
 				// adaug la regiunea corespunzatoare
+				//printf("Adding new pixel to region\n");
+				//printf("Crapa aici dupa:\n");
+				//printf("%d\n", *region_matrix[corresponding_offset]);
 
-				add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, corresponding_offset, offset, &regions[region_matrix[corresponding_offset]]);
+				Region regiune_vecin = regions[*region_matrix[corresponding_offset]];
+				//printf("here 1\n");
+				regiune_vecin.neighbours.insert(&region_left);
+				//printf("here 2\n");
+				regiune_vecin.neighbours.insert(&region_up);
+				//printf("here 3\n");
+				regiune_vecin.neighbours.insert(&region_up_left);
+				//printf("here 4\n");
+				regiune_vecin.neighbours.insert(&region_up_right);
 
+				add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, corresponding_offset, offset, &regions[*region_matrix[corresponding_offset]]);
+				//printf("After adding pixel\n");
 			}
 			else {
+				//printf("creating new region\n");
+
 				regions[noRegions++] = createRegion(noRegions - 1, normalMeasure[offset], pointCloudData[offset]);
-				region_matrix[offset] = noRegions - 1;
+				region_matrix[offset] = new int(noRegions - 1);
+				regions[noRegions - 1].starting_offset_in_image = offset;
 				// adauga vecin stanga sus stanga sus sus sus dreapta
 
 				// vecinii trebuie sa fie reciproci
@@ -523,9 +584,10 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 	}
 
 
-	//mergeRegions(width, height, regions, region_matrix);
+	mergeRegions(width, height, regions, region_matrix);
 
 
+	//printf("Almost there\n");
 	for (int y = 1; y < height - 1; y++)
 	{
 		//printf("\n");
@@ -533,9 +595,9 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 		for (int x = 1; x < width - 1; x++)
 		{
 			offset = y * width + x;
-			uchar r = (region_matrix[offset] * 5) % 255;
-			uchar g = (region_matrix[offset] * 4) % 255;
-			uchar b = (region_matrix[offset] * 9) % 255;
+			uchar r = (*region_matrix[offset] * 5) % 255;
+			uchar g = (*region_matrix[offset] * 4) % 255;
+			uchar b = (*region_matrix[offset] * 9) % 255;
 			segmentedData[offset] = cv::Vec4b(r, g, b, 1);
 
 
@@ -578,7 +640,7 @@ float pointToPlaneDistance(cv::Vec4f plane) {
 
 // merge region b into a
 
-void Filter::mergeRegionsAux(Region* a, Region* b, std::map<int, Region> regions, int* region_matrix, int width, int height) {
+void Filter::mergeRegionsAux(Region* a, Region* b, std::map<int, Region> regions, int** region_matrix, int width, int height) {
 	// move everything into a
 
 	a->medianNormal = (a->medianNormal * a->pxNo + b->medianNormal * b->pxNo) / (a->pxNo + b->pxNo);
@@ -587,15 +649,16 @@ void Filter::mergeRegionsAux(Region* a, Region* b, std::map<int, Region> regions
 
 	// update region mask
 
-	for (int i = 0; i < width * height; ++i) {
-		if (region_matrix[i] == b->id) {
-			region_matrix[i] = a->id;
-		}
-	}
+	
+	
+	*region_matrix[b->starting_offset_in_image] = *region_matrix[a->starting_offset_in_image];
+	printf("mergeRegionsAux after updating region mask");
 
 	// remove b from map
 
-	regions.erase(b->id);
+	// Possible bug from removing items from map while iterating over it
+	 
+	// regions.erase(b->id);
 
 }
 
@@ -605,7 +668,7 @@ void Filter::mergeRegionsAux(Region* a, Region* b, std::map<int, Region> regions
 // nu trebuie sa fac flood fill
 
 
-void Filter::mergeRegions(int width, int height, std::map<int, Region> regions, int* region_matrix) {
+void Filter::mergeRegions(int width, int height, std::map<int, Region> regions, int** region_matrix) {
 
 	float treshold = 100;
 
@@ -626,12 +689,11 @@ void Filter::mergeRegions(int width, int height, std::map<int, Region> regions, 
 	for (auto const& x : regions) {
 		// get neighbours
 
-		int len = x.second.neighbours.size();
-		for (int i = 0; i < len; ++i) {
-			float cost = evaluate_cost(x.second, *(x.second.neighbours[i]));
+		for (auto itr : x.second.neighbours) {
+			float cost = evaluate_cost(x.second, *itr);
 			if (abs(cost - treshold) < 0.001) {
 				Region current_region = regions[x.first];
-				Region neigh_region = regions[x.second.neighbours[i]->id];
+				Region neigh_region = regions[itr->id];
 				mergeRegionsAux(&current_region, &neigh_region, regions, region_matrix, width, height);
 			}
 		}
