@@ -335,11 +335,6 @@ void Filter::regions_statistics(std::map<int, Region> regions) {
 	printf("Number of regions: %d\n", max_id);
 	printf("Biggest region has %d\n", max_region.pxNo);
 }
-// TODO: adauga vecini reciproc		----- DONE
-// Update lista vecini cand o noua regiune se creaza
-// TODO: modifica indexul din masca sa fie un pointer nu un ---- DONE 
-
-// px A e adaugat la regiunea B deci toti vecinii lui A devin si vecinii lui B
 
 void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeasure, cv::Vec4b* segmentedData, int width, int height) {
 
@@ -383,11 +378,11 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 	regions[noRegions++] = createRegion(noRegions - 1, normalMeasure[0], pointCloudData[0]);
 	region_matrix[0] = new int(0);
 	regions[noRegions - 1].starting_offset_in_image = 0;
-	//printf("After initializing first pixel as region\n");
+	
 
 	// nu are ce vecin sa adauge ca are doar unul pe ala precedent
 	for (int i = 1; i < width; ++i) {
-		//printf("%d Doing first row\n", i);
+		
 		if (isnan(normalMeasure[i][0]) || isnan(normalMeasure[i][1]) || isnan(normalMeasure[i][2]) || isnan(normalMeasure[i][3])) {
 			add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, 0, i, &regions[0]);
 			region_matrix[i] = region_matrix[0];
@@ -427,7 +422,7 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 			
 			continue;
 		}
-		// aici crapa | region_matrix[(i-1)*width] nu e initializat
+		
 		
 		Region regiune_vecin = regions[*(region_matrix[(i - 1) * width])];
 		
@@ -454,23 +449,22 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 
 
 	
-	// trebuie adaugat vecinul de sus?
-	// mama dar trebuie ceva recursiv?
+
 	for (int y = 1; y < height - 1; y++)
 	{
 		for (int x = 1; x < width - 1; x++)
 		{
-			//printf("\t\t%d\n", offset);
+	
 			offset = y * width + x;
 
 			if (isnan(normalMeasure[offset][0]) || isnan(normalMeasure[offset][1]) || isnan(normalMeasure[offset][2]) || isnan(normalMeasure[offset][3])) {
 				add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, 0, offset, &regions[0]);
-				//printf("isnan again\n");
+			
 				region_matrix[offset] = region_matrix[0];
 				continue;
 			}
 
-			// normalProcessedData[offset] = cv::Vec4b(G, G, G, 0);
+			
 			int left = offset - 1;
 			int up = offset - width;
 			int up_left = offset - width - 1;
@@ -479,16 +473,10 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 			// map < id_regiune , regiune >
 			// key : region_matrix[left]
 
-			// TODO : pune paranteze aici dupa *
-			//printf("Seg fault 1\n");
+
 			auto cost_left = evaluate_cost(left, offset, regions[*(region_matrix[left])]);
-			//printf("Seg fault 2\n");
 			auto cost_up = evaluate_cost(up, offset, regions[*(region_matrix[up])]);
-			//printf("Seg fault 3\n");
 			auto cost_up_left = evaluate_cost(up_left, offset, regions[*(region_matrix[up_left])]);
-			//printf("Seg fault 4------%d\n",region_matrix[up_right] == nullptr);
-			//printf("h:%d w:%d -- up_right:%d\n", y, x,up_right);
-			// aici ia seg fault
 			float cost_up_right;
 			if (x == width - 2) {
 				cost_up_right = evaluate_cost(0, offset, regions[0]);
@@ -498,13 +486,10 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 			}
 			
 
-			//printf("Seg fault 5\n");
+
 			Region region_left = regions[*(region_matrix[left])];
-			//printf("Seg fault 6\n");
 			Region region_up = regions[*(region_matrix[up])];
-			//printf("Seg fault 7\n");
 			Region region_up_left = regions[*(region_matrix[up_left])];
-			//printf("Seg fault 8\n");
 			Region region_up_right;
 			if (x == width - 2) {
 				region_up_right = regions[0];
@@ -514,7 +499,6 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 			}
 
 			auto min_cost = cost_left;
-			//printf("Seg fault 9\n");
 			auto corresponding_region = regions[*(region_matrix[left])];
 			auto corresponding_offset = left;
 
@@ -536,28 +520,18 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 				corresponding_offset = up_right;
 			}
 
-			//printf("Doing each cell\n");
+
 			if (min_cost < treshold) {
 				// adaug la regiunea corespunzatoare
-				//printf("Adding new pixel to region\n");
-				//printf("Crapa aici dupa:\n");
-				//printf("%d\n", *region_matrix[corresponding_offset]);
-
 				Region regiune_vecin = regions[*region_matrix[corresponding_offset]];
-				//printf("here 1\n");
 				regiune_vecin.neighbours.insert(&region_left);
-				//printf("here 2\n");
 				regiune_vecin.neighbours.insert(&region_up);
-				//printf("here 3\n");
 				regiune_vecin.neighbours.insert(&region_up_left);
-				//printf("here 4\n");
 				regiune_vecin.neighbours.insert(&region_up_right);
 
 				add_pixel_to_region(normalMeasure, pointCloudData, region_matrix, corresponding_offset, offset, &regions[*region_matrix[corresponding_offset]]);
-				//printf("After adding pixel\n");
 			}
 			else {
-				//printf("creating new region\n");
 
 				regions[noRegions++] = createRegion(noRegions - 1, normalMeasure[offset], pointCloudData[offset]);
 				region_matrix[offset] = new int(noRegions - 1);
@@ -587,10 +561,8 @@ void Filter::planarSegmentation(cv::Vec4f* pointCloudData, cv::Vec4f* normalMeas
 	mergeRegions(width, height, regions, region_matrix);
 
 
-	//printf("Almost there\n");
 	for (int y = 1; y < height - 1; y++)
 	{
-		//printf("\n");
 
 		for (int x = 1; x < width - 1; x++)
 		{
@@ -662,11 +634,6 @@ void Filter::mergeRegionsAux(Region* a, Region* b, std::map<int, Region> regions
 
 }
 
-// deque 
-// fiecare pixel are un pointer la un int
-// cand schimb culorea schimb doar ce e la valoarea pointerului ala
-// nu trebuie sa fac flood fill
-
 
 void Filter::mergeRegions(int width, int height, std::map<int, Region> regions, int** region_matrix) {
 
@@ -680,7 +647,7 @@ void Filter::mergeRegions(int width, int height, std::map<int, Region> regions, 
 		float pondere2 = 0.5;
 
 
-		// maybe abs diff
+		
 		return pondere1 * (1 - my_dot(a.medianNormal, b.medianNormal))
 			+ pondere2 * (pointToPlaneDistance(planeEquationFromPointAndNormal(a.medianPoint, a.medianNormal))
 				- pointToPlaneDistance(planeEquationFromPointAndNormal(b.medianPoint, b.medianNormal)));

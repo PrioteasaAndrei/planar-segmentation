@@ -11,7 +11,6 @@ struct Region {
 
 	std::set<Region*> neighbours;
 
-	// not safe
 	bool operator<(const Region& t) const
 	{
 		return (this->id < t.id);
